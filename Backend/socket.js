@@ -7,8 +7,9 @@ let io;
 function initializeSocket(server) {
     io = socketIo(server, {
         cors: {
-            origin: '*', // Allow all origins (you may want to restrict this for production)
-            methods: ['GET', 'POST']
+            origin: 'http://localhost:5173', // Replace this with the exact origin of your frontend
+            methods: ['GET', 'POST', 'PUT', 'DELETE'],
+            credentials: true,
         }
     });
 

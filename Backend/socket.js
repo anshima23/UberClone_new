@@ -7,15 +7,16 @@ let io;
 function initializeSocket(server) {
     io = socketIo(server, {
         cors: {
-            origin: '*',
-            methods: [ 'GET', 'POST' ]
+            origin: '*', // Allow all origins (you may want to restrict this for production)
+            methods: ['GET', 'POST']
         }
     });
 
+    // Handling incoming connections
     io.on('connection', (socket) => {
         console.log(`Client connected: ${socket.id}`);
 
-
+        // Handling join events
         socket.on('join', async (data) => {
             const { userId, userType } = data;
 
@@ -26,7 +27,7 @@ function initializeSocket(server) {
             }
         });
 
-
+        // Handling location updates for captain
         socket.on('update-location-captain', async (data) => {
             const { userId, location } = data;
 
@@ -42,15 +43,16 @@ function initializeSocket(server) {
             });
         });
 
+        // Handling disconnect events
         socket.on('disconnect', () => {
             console.log(`Client disconnected: ${socket.id}`);
         });
     });
 }
 
+// Function to send messages to specific socket ID
 const sendMessageToSocketId = (socketId, messageObject) => {
-
-console.log(messageObject);
+    console.log(messageObject);
 
     if (io) {
         io.to(socketId).emit(messageObject.event, messageObject.data);

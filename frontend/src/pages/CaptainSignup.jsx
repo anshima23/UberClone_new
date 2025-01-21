@@ -18,12 +18,16 @@ const CaptainSignup = () => {
   const [ vehicleCapacity, setVehicleCapacity ] = useState('')
   const [ vehicleType, setVehicleType ] = useState('')
 
+  const [ isLoading, setIsLoading ] = useState(false)
+  const [ error, setError ] = useState(null)
 
   const { captain, setCaptain } = React.useContext(CaptainDataContext)
 
-
   const submitHandler = async (e) => {
     e.preventDefault()
+    setIsLoading(true)
+    setError(null)
+
     const captainData = {
       fullname: {
         firstname: firstName,
@@ -39,33 +43,38 @@ const CaptainSignup = () => {
       }
     }
 
-    const response = await axios.post(`${import.meta.env.VITE_BASE_URL}/captains/register`, captainData)
+    try {
+      const response = await axios.post(`${import.meta.env.VITE_BASE_URL}/captains/register`, captainData)
 
-    if (response.status === 201) {
-      const data = response.data
-      setCaptain(data.captain)
-      localStorage.setItem('token', data.token)
-      navigate('/captain-home')
+      if (response.status === 201) {
+        const data = response.data
+        setCaptain(data.captain)
+        localStorage.setItem('token', data.token)
+        navigate('/captain-home')
+        // Clear form fields only if the request was successful
+        setEmail('')
+        setFirstName('')
+        setLastName('')
+        setPassword('')
+        setVehicleColor('')
+        setVehiclePlate('')
+        setVehicleCapacity('')
+        setVehicleType('')
+      }
+    } catch (err) {
+      // Handle Axios error gracefully
+      setError(err.response ? err.response.data.message : 'Something went wrong')
+    } finally {
+      setIsLoading(false)
     }
-
-    setEmail('')
-    setFirstName('')
-    setLastName('')
-    setPassword('')
-    setVehicleColor('')
-    setVehiclePlate('')
-    setVehicleCapacity('')
-    setVehicleType('')
-
   }
+
   return (
     <div className='py-5 px-5 h-screen flex flex-col justify-between'>
       <div>
         <img className='w-20 mb-3' src="https://www.svgrepo.com/show/505031/uber-driver.svg" alt="" />
 
-        <form onSubmit={(e) => {
-          submitHandler(e)
-        }}>
+        <form onSubmit={submitHandler}>
 
           <h3 className='text-lg w-full  font-medium mb-2'>What's our Captain's name</h3>
           <div className='flex gap-4 mb-7'>
@@ -75,9 +84,7 @@ const CaptainSignup = () => {
               type="text"
               placeholder='First name'
               value={firstName}
-              onChange={(e) => {
-                setFirstName(e.target.value)
-              }}
+              onChange={(e) => setFirstName(e.target.value)}
             />
             <input
               required
@@ -85,9 +92,7 @@ const CaptainSignup = () => {
               type="text"
               placeholder='Last name'
               value={lastName}
-              onChange={(e) => {
-                setLastName(e.target.value)
-              }}
+              onChange={(e) => setLastName(e.target.value)}
             />
           </div>
 
@@ -95,22 +100,17 @@ const CaptainSignup = () => {
           <input
             required
             value={email}
-            onChange={(e) => {
-              setEmail(e.target.value)
-            }}
+            onChange={(e) => setEmail(e.target.value)}
             className='bg-[#eeeeee] mb-7 rounded-lg px-4 py-2 border w-full text-lg placeholder:text-base'
             type="email"
             placeholder='email@example.com'
           />
 
           <h3 className='text-lg font-medium mb-2'>Enter Password</h3>
-
           <input
             className='bg-[#eeeeee] mb-7 rounded-lg px-4 py-2 border w-full text-lg placeholder:text-base'
             value={password}
-            onChange={(e) => {
-              setPassword(e.target.value)
-            }}
+            onChange={(e) => setPassword(e.target.value)}
             required type="password"
             placeholder='password'
           />
@@ -123,9 +123,7 @@ const CaptainSignup = () => {
               type="text"
               placeholder='Vehicle Color'
               value={vehicleColor}
-              onChange={(e) => {
-                setVehicleColor(e.target.value)
-              }}
+              onChange={(e) => setVehicleColor(e.target.value)}
             />
             <input
               required
@@ -133,11 +131,10 @@ const CaptainSignup = () => {
               type="text"
               placeholder='Vehicle Plate'
               value={vehiclePlate}
-              onChange={(e) => {
-                setVehiclePlate(e.target.value)
-              }}
+              onChange={(e) => setVehiclePlate(e.target.value)}
             />
           </div>
+
           <div className='flex gap-4 mb-7'>
             <input
               required
@@ -145,17 +142,13 @@ const CaptainSignup = () => {
               type="number"
               placeholder='Vehicle Capacity'
               value={vehicleCapacity}
-              onChange={(e) => {
-                setVehicleCapacity(e.target.value)
-              }}
+              onChange={(e) => setVehicleCapacity(e.target.value)}
             />
             <select
               required
               className='bg-[#eeeeee] w-1/2 rounded-lg px-4 py-2 border text-lg placeholder:text-base'
               value={vehicleType}
-              onChange={(e) => {
-                setVehicleType(e.target.value)
-              }}
+              onChange={(e) => setVehicleType(e.target.value)}
             >
               <option value="" disabled>Select Vehicle Type</option>
               <option value="car">Car</option>
@@ -166,14 +159,25 @@ const CaptainSignup = () => {
 
           <button
             className='bg-[#111] text-white font-semibold mb-3 rounded-lg px-4 py-2 w-full text-lg placeholder:text-base'
-          >Create Captain Account</button>
+            disabled={isLoading}
+          >
+            {isLoading ? 'Creating Account...' : 'Create Captain Account'}
+          </button>
+
+          {error && <p className="text-red-500 text-center">{error}</p>}
 
         </form>
-        <p className='text-center'>Already have a account? <Link to='/captain-login' className='text-blue-600'>Login here</Link></p>
+        <p className='text-center'>
+          Already have an account? 
+          <Link to='/captain-login' className='text-blue-600'>Login here</Link>
+        </p>
       </div>
       <div>
-        <p className='text-[10px] mt-6 leading-tight'>This site is protected by reCAPTCHA and the <span className='underline'>Google Privacy
-          Policy</span> and <span className='underline'>Terms of Service apply</span>.</p>
+        <p className='text-[10px] mt-6 leading-tight'>
+          This site is protected by reCAPTCHA and the 
+          <span className='underline'>Google Privacy Policy</span> and 
+          <span className='underline'>Terms of Service apply</span>.
+        </p>
       </div>
     </div>
   )

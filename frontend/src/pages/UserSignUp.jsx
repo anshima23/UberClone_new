@@ -37,6 +37,7 @@ const UserSignup = () => {
       );
 
       if (response.status === 201) {
+        console.log("creting 201")
         const data = response.data;
         setUser(data.user);
         localStorage.setItem('token', data.token);

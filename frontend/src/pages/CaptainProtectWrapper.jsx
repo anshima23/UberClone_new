@@ -1,20 +1,19 @@
-import React, { useContext, useEffect, useState } from 'react'
-import { CaptainDataContext } from '../context/CapatainContext'
-import { useNavigate } from 'react-router-dom'
-import axios from 'axios'
+import React, { useContext, useEffect, useState } from 'react';
+import { CaptainDataContext } from '../context/CapatainContext';
+import { useNavigate } from 'react-router-dom';
+import axios from 'axios';
 
 const CaptainProtectWrapper = ({ children }) => {
-
-    const token = localStorage.getItem('token')
-    const navigate = useNavigate()
-    const { captain, setCaptain } = useContext(CaptainDataContext)
-    const [isLoading, setIsLoading] = useState(true)
-    const [error, setError] = useState(null)
+    const token = localStorage.getItem('captain-token'); // Ensure correct token name
+    const navigate = useNavigate();
+    const { captain, setCaptain } = useContext(CaptainDataContext);
+    const [isLoading, setIsLoading] = useState(true);
+    const [error, setError] = useState(null);
 
     useEffect(() => {
         if (!token) {
-            navigate('/captain-login')
-            return
+            navigate('/captain-login');
+            return;
         }
 
         const fetchProfile = async () => {
@@ -23,31 +22,31 @@ const CaptainProtectWrapper = ({ children }) => {
                     headers: {
                         Authorization: `Bearer ${token}`
                     }
-                })
+                });
                 
                 if (response.status === 200) {
-                    setCaptain(response.data.captain)
-                    setIsLoading(false)
+                    setCaptain(response.data.captain);
+                    setIsLoading(false);
                 }
             } catch (err) {
-                localStorage.removeItem('token')
-                setError('Session expired or invalid token')
-                navigate('/captain-login')
+                localStorage.removeItem('captain-token'); // Ensure correct token removal
+                setError('Session expired or invalid token');
+                navigate('/captain-login');
             }
-        }
+        };
 
-        fetchProfile()
-    }, [token, navigate, setCaptain])
+        fetchProfile();
+    }, [token, navigate, setCaptain]);
 
     if (isLoading) {
-        return <div>Loading...</div>
+        return <div>Loading...</div>;
     }
 
     if (error) {
-        return <div>{error}</div>
+        return <div>{error}</div>;
     }
 
-    return <>{children}</>
-}
+    return <>{children}</>;
+};
 
-export default CaptainProtectWrapper
+export default CaptainProtectWrapper;

@@ -16,9 +16,13 @@ const SocketProvider = ({ children }) => {
             console.log('Disconnected from server');
         });
 
+        // Cleanup on unmount
+        return () => {
+            socket.off('connect');
+            socket.off('disconnect');
+            // Add any additional cleanup for specific events here
+        };
     }, []);
-
-
 
     return (
         <SocketContext.Provider value={{ socket }}>

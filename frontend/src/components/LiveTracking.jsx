@@ -1,69 +1,42 @@
-import React, { useState, useEffect } from 'react'
-import { LoadScript, GoogleMap, Marker } from '@react-google-maps/api'
+import React, { useState, useEffect } from 'react';
+import { MapContainer, TileLayer, Marker } from 'react-leaflet';
+import 'leaflet/dist/leaflet.css';
+import L from 'leaflet';
 
-const containerStyle = {
-    width: '100%',
-    height: '100%',
-};
-
-const center = {
-    lat: -3.745,
-    lng: -38.523
-};
+// Fix for default marker icon issues
+delete L.Icon.Default.prototype._getIconUrl;
+L.Icon.Default.mergeOptions({
+    iconRetinaUrl: require('leaflet/dist/images/marker-icon-2x.png'),
+    iconUrl: require('leaflet/dist/images/marker-icon.png'),
+    shadowUrl: require('leaflet/dist/images/marker-shadow.png'),
+});
 
 const LiveTracking = () => {
-    const [ currentPosition, setCurrentPosition ] = useState(center);
+    const [currentPosition, setCurrentPosition] = useState({ lat: -3.745, lng: -38.523 }); // Default position
 
     useEffect(() => {
         navigator.geolocation.getCurrentPosition((position) => {
             const { latitude, longitude } = position.coords;
-            setCurrentPosition({
-                lat: latitude,
-                lng: longitude
-            });
+            setCurrentPosition({ lat: latitude, lng: longitude });
         });
 
         const watchId = navigator.geolocation.watchPosition((position) => {
             const { latitude, longitude } = position.coords;
-            setCurrentPosition({
-                lat: latitude,
-                lng: longitude
-            });
+            setCurrentPosition({ lat: latitude, lng: longitude });
         });
 
         return () => navigator.geolocation.clearWatch(watchId);
     }, []);
 
-    useEffect(() => {
-        const updatePosition = () => {
-            navigator.geolocation.getCurrentPosition((position) => {
-                const { latitude, longitude } = position.coords;
-
-                console.log('Position updated:', latitude, longitude);
-                setCurrentPosition({
-                    lat: latitude,
-                    lng: longitude
-                });
-            });
-        };
-
-        updatePosition(); // Initial position update
-
-        const intervalId = setInterval(updatePosition, 1000); // Update every 10 seconds
-
-    }, []);
-
     return (
-        <LoadScript googleMapsApiKey={import.meta.env.VITE_GOOGLE_MAPS_API_KEY}>
-            <GoogleMap
-                mapContainerStyle={containerStyle}
-                center={currentPosition}
-                zoom={15}
-            >
-                <Marker position={currentPosition} />
-            </GoogleMap>
-        </LoadScript>
-    )
+        <MapContainer center={currentPosition} zoom={15} style={{ height: '100%', width: '100%' }}>
+            <TileLayer
+                url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+                attribution='&copy; OpenStreetMap contributors'
+            />
+            <Marker position={currentPosition} />
+        </MapContainer>
+    );
 }
 
-export default LiveTracking
+export default LiveTracking;

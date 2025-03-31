@@ -6,33 +6,36 @@ import axios from 'axios';
 const UserProtectWrapper = ({ children }) => {
   const token = localStorage.getItem('token');
   const navigate = useNavigate();
-  const { user, setUser } = useContext(UserDataContext);
+  const { setUser } = useContext(UserDataContext);
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
     if (!token) {
       navigate('/login');
+      return;
     }
 
-    // Make sure credentials are sent with the request
-    axios
-      .get(`${import.meta.env.VITE_BASE_URL}/users/profile`, {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-        withCredentials: true, // Ensure cookies are sent along with the request
-      })
-      .then((response) => {
+    const fetchProfile = async () => {
+      try {
+        const response = await axios.get(`${import.meta.env.VITE_BASE_URL}/users/profile`, {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+          withCredentials: true,
+        });
+
         if (response.status === 200) {
           setUser(response.data);
           setIsLoading(false);
         }
-      })
-      .catch((err) => {
+      } catch (err) {
         console.log(err);
         localStorage.removeItem('token');
         navigate('/login');
-      });
+      }
+    };
+
+    fetchProfile();
   }, [token, navigate, setUser]);
 
   if (isLoading) {

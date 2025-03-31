@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState, useContext } from 'react';
+import React, { useContext, useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import 'remixicon/fonts/remixicon.css';
@@ -8,12 +8,15 @@ import ConfirmRide from '../components/ConfirmRide';
 import LookingForDriver from '../components/LookingForDriver';
 import WaitingForDriver from '../components/WaitingForDriver';
 import LiveTracking from '../components/LiveTracking';
+import MapComponent from '../components/MapComponent'; // Import the MapComponent
 import { SocketContext } from '../context/SocketContext';
 import { UserDataContext } from '../context/UserContext';
 
 const Home = () => {
   const [pickup, setPickup] = useState('');
   const [destination, setDestination] = useState('');
+  const [pickupCoordinates, setPickupCoordinates] = useState({ lat: null, lng: null });
+  const [destinationCoordinates, setDestinationCoordinates] = useState({ lat: null, lng: null });
   const [panelOpen, setPanelOpen] = useState(false);
   const [vehiclePanel, setVehiclePanel] = useState(false);
   const [confirmRidePanel, setConfirmRidePanel] = useState(false);
@@ -21,7 +24,6 @@ const Home = () => {
   const [waitingForDriver, setWaitingForDriver] = useState(false);
   const [pickupSuggestions, setPickupSuggestions] = useState([]);
   const [destinationSuggestions, setDestinationSuggestions] = useState([]);
-  const [activeField, setActiveField] = useState(null);
   const [fare, setFare] = useState({});
   const [vehicleType, setVehicleType] = useState(null);
   const [ride, setRide] = useState(null);
@@ -74,6 +76,17 @@ const Home = () => {
       type === 'pickup'
         ? setPickupSuggestions(suggestions)
         : setDestinationSuggestions(suggestions);
+
+      // Assuming the first suggestion has coordinates
+      if (suggestions.length > 0) {
+        if (type === 'pickup') {
+          // Replace with actual latitude and longitude from your suggestions
+          setPickupCoordinates({ lat: suggestions[0].lat, lng: suggestions[0].lng });
+        } else {
+          // Replace with actual latitude and longitude from your suggestions
+          setDestinationCoordinates({ lat: suggestions[0].lat, lng: suggestions[0].lng });
+        }
+      }
     } catch (error) {
       console.error('Error fetching location suggestions:', error);
     }
@@ -93,7 +106,6 @@ const Home = () => {
 
       {panelOpen && (
         <VehiclePanel
-          ref={vehiclePanelRef}
           setPanelOpen={setPanelOpen}
           setVehiclePanel={setVehiclePanel}
           vehiclePanel={vehiclePanel}
@@ -103,7 +115,6 @@ const Home = () => {
 
       {confirmRidePanel && (
         <ConfirmRide
-          ref={confirmRidePanelRef}
           setConfirmRidePanel={setConfirmRidePanel}
           setVehiclePanel={setVehiclePanel}
           vehicleType={vehicleType}
@@ -114,10 +125,18 @@ const Home = () => {
 
       {vehicleFound && <LookingForDriver />}
       {waitingForDriver && (
-        <WaitingForDriver ref={waitingForDriverRef} ride={ride} />
+        <WaitingForDriver ride={ride} />
       )}
 
       <LiveTracking ride={ride} />
+
+      {/* Add the MapComponent here */}
+      <div className="absolute bottom-0 left-0 right-0 h-1/2">
+        <MapComponent 
+          pickup={pickupCoordinates} 
+          destination={destinationCoordinates} 
+        />
+      </div>
     </div>
   );
 };

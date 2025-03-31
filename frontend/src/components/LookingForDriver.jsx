@@ -1,10 +1,11 @@
-import React from 'react'
+import React from 'react';
+import MapComponent from '../components/MapComponent'; // Import your MapComponent
 
 const LookingForDriver = (props) => {
     return (
         <div>
             <h5 className='p-1 text-center w-[93%] absolute top-0' onClick={() => {
-                props.setVehicleFound(false)
+                props.setVehicleFound(false);
             }}><i className="text-3xl text-gray-200 ri-arrow-down-wide-line"></i></h5>
             <h3 className='text-2xl font-semibold mb-5'>Looking for a Driver</h3>
 
@@ -28,14 +29,17 @@ const LookingForDriver = (props) => {
                     <div className='flex items-center gap-5 p-3'>
                         <i className="ri-currency-line"></i>
                         <div>
-                            <h3 className='text-lg font-medium'>₹{props.fare[ props.vehicleType ]} </h3>
+                            <h3 className='text-lg font-medium'>₹{props.fare[props.vehicleType]} </h3>
                             <p className='text-sm -mt-1 text-gray-600'>Cash Cash</p>
                         </div>
                     </div>
                 </div>
+
+                {/* Add Leaflet Map */}
+                <MapComponent pickup={props.pickupCoordinates} destination={props.destinationCoordinates} />
             </div>
         </div>
-    )
+    );
 }
 
-export default LookingForDriver
+export default LookingForDriver;

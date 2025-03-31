@@ -1,149 +1,64 @@
-import React, { useRef, useState, useEffect, useContext } from 'react'
-import { Link } from 'react-router-dom'
-import CaptainDetails from '../components/CaptainDetails'
-import RidePopUp from '../components/RidePopUp'
-import { useGSAP } from '@gsap/react'
-import gsap from 'gsap'
-import ConfirmRidePopUp from '../components/ConfirmRidePopUp'
-import { SocketContext } from '../context/SocketContext'
-import { CaptainDataContext } from '../context/CapatainContext'
-import axios from 'axios'
+import React, { useEffect, useState, useContext } from 'react';
+import { MapContainer, TileLayer, Marker, Popup } from 'react-leaflet';
+import { SocketContext } from '../context/SocketContext';
+import { CaptainDataContext } from '../context/CapatainContext';
 
 const CaptainHome = () => {
+    const [position, setPosition] = useState(null);
+    const { socket } = useContext(SocketContext);
+    const { captain } = useContext(CaptainDataContext); // Get captain data
 
-    const [ridePopupPanel, setRidePopupPanel] = useState(false)
-    const [confirmRidePopupPanel, setConfirmRidePopupPanel] = useState(false)
-    const [ride, setRide] = useState(null)
-    const [error, setError] = useState(null)
-    const [loading, setLoading] = useState(false)
-
-    const ridePopupPanelRef = useRef(null)
-    const confirmRidePopupPanelRef = useRef(null)
-
-    const { socket } = useContext(SocketContext)
-    const { captain } = useContext(CaptainDataContext)
-
-    useEffect(() => {
-        socket.emit('join', {
-            userId: captain._id,
-            userType: 'captain'
-        })
-
-        const updateLocation = () => {
-            if (navigator.geolocation) {
-                navigator.geolocation.getCurrentPosition(position => {
-                    socket.emit('update-location-captain', {
-                        userId: captain._id,
-                        location: {
-                            ltd: position.coords.latitude,
-                            lng: position.coords.longitude
-                        }
-                    })
-                })
-            }
-        }
-
-        const locationInterval = setInterval(updateLocation, 10000)
-        updateLocation()
-
-        return () => clearInterval(locationInterval)  // Cleanup on unmount
-    }, [socket, captain._id])
-
-    // Listening for new ride requests
-    useEffect(() => {
-        socket.on('new-ride', (data) => {
-            setRide(data)
-            setRidePopupPanel(true)
-        })
-
-        // Cleanup socket listener on unmount
-        return () => socket.off('new-ride')
-    }, [socket])
-
-    // Function to confirm the ride and communicate with the backend using Axios
-    const confirmRide = async () => {
-        setLoading(true)
-        setError(null) // Clear previous errors
-
-        try {
-            const response = await axios.post(`${import.meta.env.VITE_BASE_URL}/rides/confirm`, {
-                rideId: ride._id,
-                captainId: captain._id
-            }, {
-                headers: {
-                    Authorization: `Bearer ${localStorage.getItem('token')}`
+    // Function to update the captain's location
+    const updateLocation = (lat, lng) => {
+        if (socket && captain) {
+            socket.emit('update-location-captain', {
+                userId: captain._id, // Use actual captain's ID
+                location: {
+                    lat,
+                    lng
                 }
-            })
+            });
+        }
+    };
 
-            if (response.status === 200) {
-                setConfirmRidePopupPanel(true)
-                setRidePopupPanel(false)
+    useEffect(() => {
+        if (navigator.geolocation) {
+            navigator.geolocation.getCurrentPosition((position) => {
+                const { latitude, longitude } = position.coords;
+                setPosition({ lat: latitude, lng: longitude });
+                updateLocation(latitude, longitude);
+            });
+        }
+
+        // Update location every 10 seconds
+        const locationInterval = setInterval(() => {
+            if (navigator.geolocation) {
+                navigator.geolocation.getCurrentPosition((position) => {
+                    const { latitude, longitude } = position.coords;
+                    setPosition({ lat: latitude, lng: longitude });
+                    updateLocation(latitude, longitude);
+                });
             }
-        } catch (err) {
-            setError('Failed to confirm ride. Please try again later.')
-            console.error('Error confirming ride:', err)
-        } finally {
-            setLoading(false)
-        }
-    }
+        }, 10000);
 
-    useGSAP(() => {
-        if (ridePopupPanel) {
-            gsap.to(ridePopupPanelRef.current, {
-                transform: 'translateY(0)'
-            })
-        } else {
-            gsap.to(ridePopupPanelRef.current, {
-                transform: 'translateY(100%)'
-            })
-        }
-    }, [ridePopupPanel])
-
-    useGSAP(() => {
-        if (confirmRidePopupPanel) {
-            gsap.to(confirmRidePopupPanelRef.current, {
-                transform: 'translateY(0)'
-            })
-        } else {
-            gsap.to(confirmRidePopupPanelRef.current, {
-                transform: 'translateY(100%)'
-            })
-        }
-    }, [confirmRidePopupPanel])
+        return () => clearInterval(locationInterval);
+    }, [socket, captain]);
 
     return (
-        <div className='h-screen'>
-            <div className='fixed p-6 top-0 flex items-center justify-between w-screen'>
-                <img className='w-16' src="https://upload.wikimedia.org/wikipedia/commons/c/cc/Uber_logo_2018.png" alt="" />
-                <Link to='/captain-home' className=' h-10 w-10 bg-white flex items-center justify-center rounded-full'>
-                    <i className="text-lg font-medium ri-logout-box-r-line"></i>
-                </Link>
-            </div>
-            <div className='h-3/5'>
-                <img className='h-full w-full object-cover' src="https://miro.medium.com/v2/resize:fit:1400/0*gwMx05pqII5hbfmX.gif" alt="" />
-            </div>
-            <div className='h-2/5 p-6'>
-                <CaptainDetails />
-            </div>
-            <div ref={ridePopupPanelRef} className='fixed w-full z-10 bottom-0 translate-y-full bg-white px-3 py-10 pt-12'>
-                <RidePopUp
-                    ride={ride}
-                    setRidePopupPanel={setRidePopupPanel}
-                    setConfirmRidePopupPanel={setConfirmRidePopupPanel}
-                    confirmRide={confirmRide}
-                    loading={loading}
-                    error={error}
+        <div style={{ height: '100vh' }}>
+            <MapContainer center={position || [51.505, -0.09]} zoom={13} style={{ height: '100%' }}>
+                <TileLayer
+                    url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+                    attribution='&copy; OpenStreetMap contributors'
                 />
-            </div>
-            <div ref={confirmRidePopupPanelRef} className='fixed w-full h-screen z-10 bottom-0 translate-y-full bg-white px-3 py-10 pt-12'>
-                <ConfirmRidePopUp
-                    ride={ride}
-                    setConfirmRidePopupPanel={setConfirmRidePopupPanel}
-                    setRidePopupPanel={setRidePopupPanel}
-                />
-            </div>
+                {position && (
+                    <Marker position={position}>
+                        <Popup>Your location</Popup>
+                    </Marker>
+                )}
+            </MapContainer>
         </div>
-    )
-}
+    );
+};
 
-export default CaptainHome
+export default CaptainHome;
